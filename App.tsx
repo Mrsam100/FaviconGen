@@ -6,9 +6,12 @@ import ResultView from './components/ResultView';
 import Footer from './components/Footer';
 import Features from './components/Features';
 import InteractiveBackground from './components/InteractiveBackground';
+import { ToastProvider } from './components/Toast';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { AppView, FaviconSet } from './types';
+import { SecureStorage } from './utils/storage';
 
-const App: React.FC = () => {
+const AppContent: React.FC = () => {
   const [view, setView] = useState<AppView>('landing');
   const [activeSet, setActiveSet] = useState<FaviconSet | null>(null);
   const [archives, setArchives] = useState<FaviconSet[]>([]);
@@ -27,10 +30,10 @@ const App: React.FC = () => {
     };
 
     window.addEventListener('scroll', handleScroll);
-    
-    // Load archives
-    const saved = localStorage.getItem('favicon_archives');
-    if (saved) setArchives(JSON.parse(saved));
+
+    // Load archives safely
+    const saved = SecureStorage.get<FaviconSet[]>('archives', []);
+    setArchives(saved);
 
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
@@ -39,7 +42,7 @@ const App: React.FC = () => {
     setActiveSet(faviconSet);
     const newArchives = [faviconSet, ...archives].slice(0, 15);
     setArchives(newArchives);
-    localStorage.setItem('favicon_archives', JSON.stringify(newArchives));
+    SecureStorage.set('archives', newArchives);
     setView('generator');
   };
 
@@ -115,6 +118,16 @@ const App: React.FC = () => {
 
       <Footer onLinkClick={(e, id) => { e.preventDefault(); handleNav(id); }} />
     </div>
+  );
+};
+
+const App: React.FC = () => {
+  return (
+    <ErrorBoundary>
+      <ToastProvider>
+        <AppContent />
+      </ToastProvider>
+    </ErrorBoundary>
   );
 };
 

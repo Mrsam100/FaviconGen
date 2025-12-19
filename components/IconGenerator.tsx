@@ -2,18 +2,24 @@ import React, { useState, useRef } from 'react';
 import { analyzeLogoForIcons } from '../services/geminiService';
 import { FaviconSet, IconResult } from '../types';
 import { FAVICON_SIZES, APPLE_SIZES, ANDROID_SIZES, MS_SIZES } from '../constants';
+import { useToast } from './Toast';
+import { sanitizeFileName, isValidImageFile, isValidImageDimensions } from '../utils/sanitization';
+import { generateSecureId } from '../utils/idGenerator';
+import { handleFileReaderError, handleImageLoadError, getUserFriendlyMessage, AppError } from '../utils/errorHandling';
 
 interface IconGeneratorProps {
   onComplete: (faviconSet: FaviconSet) => void;
 }
 
 const IconGenerator: React.FC<IconGeneratorProps> = ({ onComplete }) => {
+  const { showToast } = useToast();
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
   const [dragActive, setDragActive] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [aiFeedback, setAiFeedback] = useState<any>(null);
-  
+  const [uploadController, setUploadController] = useState<AbortController | null>(null);
+
   const [useOutline, setUseOutline] = useState(false);
   const [outlineThickness, setOutlineThickness] = useState(4);
   const [outlineColor, setOutlineColor] = useState('#8b5cf6');
@@ -21,32 +27,120 @@ const IconGenerator: React.FC<IconGeneratorProps> = ({ onComplete }) => {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const cancelUpload = () => {
+    if (uploadController) {
+      uploadController.abort();
+      setUploadController(null);
+    }
+    setIsProcessing(false);
+    setProgress(0);
+    setErrorMessage(null);
+    showToast('Upload cancelled', 'info');
+  };
+
   const generateIcons = async (file: File): Promise<void> => {
-    if (!file.type.startsWith('image/')) {
-        setErrorMessage("Please upload an image file (PNG, JPG, SVG).");
-        return;
+    // Cancel any existing upload
+    if (uploadController) {
+      uploadController.abort();
     }
 
+    // Validate file
+    if (!isValidImageFile(file)) {
+      const errorMsg = "Invalid file type. Please upload a valid image file (PNG, JPG, or SVG) under 10MB.";
+      setErrorMessage(errorMsg);
+      showToast(errorMsg, 'error');
+      return;
+    }
+
+    const controller = new AbortController();
+    setUploadController(controller);
     setIsProcessing(true);
     setProgress(5);
     setErrorMessage(null);
-    
+
     const reader = new FileReader();
+
+    // Critical: Add error handler for FileReader
+    reader.onerror = () => {
+      const error = handleFileReaderError(reader.error);
+      setErrorMessage(error.message);
+      showToast(error.message, 'error');
+      setIsProcessing(false);
+      setProgress(0);
+      setUploadController(null);
+    };
+
     reader.onload = async (e) => {
+      if (controller.signal.aborted) return;
+
       const result = e.target?.result as string;
+      if (!result) {
+        setErrorMessage("Failed to read file data.");
+        showToast("Failed to read file data.", 'error');
+        setIsProcessing(false);
+        setUploadController(null);
+        return;
+      }
+
       const img = new Image();
-      
+
+      // Critical: Add error handler for Image
+      img.onerror = () => {
+        const error = handleImageLoadError();
+        setErrorMessage(error.message);
+        showToast(error.message, 'error');
+        setIsProcessing(false);
+        setProgress(0);
+        setUploadController(null);
+      };
+
+      // Add timeout for image loading
+      const loadTimeout = setTimeout(() => {
+        setErrorMessage("Image loading timeout. Please try a smaller file.");
+        showToast("Image loading timeout. Please try a smaller file.", 'error');
+        setIsProcessing(false);
+        setProgress(0);
+        setUploadController(null);
+      }, 30000); // 30 second timeout
+
       img.onload = async () => {
+        clearTimeout(loadTimeout);
+
+        if (controller.signal.aborted) return;
+
         try {
+          setProgress(15);
+
+          // Validate image dimensions
+          if (!isValidImageDimensions(img.width, img.height)) {
+            throw new AppError(
+              "Image dimensions invalid. Please use an image between 32x32 and 8192x8192 pixels.",
+              "IMAGE_DIMENSIONS_INVALID",
+              "high"
+            );
+          }
+
           setProgress(20);
-          const analysis = await analyzeLogoForIcons(file.name, result.split(',')[1]);
+
+          const sanitizedFileName = sanitizeFileName(file.name);
+          const base64Data = result.split(',')[1];
+
+          // AI analysis with error handling
+          const analysis = await analyzeLogoForIcons(sanitizedFileName, base64Data);
           setAiFeedback(analysis);
           setProgress(40);
 
           const generatedIcons: IconResult[] = [];
           const canvas = document.createElement('canvas');
           const ctx = canvas.getContext('2d');
-          if (!ctx) return;
+
+          if (!ctx) {
+            throw new AppError(
+              "Canvas not supported in your browser.",
+              "CANVAS_NOT_SUPPORTED",
+              "critical"
+            );
+          }
 
           const groups: { sizes: number[], type: IconResult['type'] }[] = [
             { sizes: FAVICON_SIZES, type: 'favicon' },
@@ -56,6 +150,8 @@ const IconGenerator: React.FC<IconGeneratorProps> = ({ onComplete }) => {
           ];
 
           for (let i = 0; i < groups.length; i++) {
+            if (controller.signal.aborted) return;
+
             const group = groups[i];
             for (const size of group.sizes) {
               canvas.width = size;
@@ -63,14 +159,14 @@ const IconGenerator: React.FC<IconGeneratorProps> = ({ onComplete }) => {
               ctx.clearRect(0, 0, size, size);
 
               if (analysis.backgroundColor && group.type !== 'favicon') {
-                  ctx.fillStyle = analysis.backgroundColor;
-                  if (borderType === 'rounded') {
-                      ctx.beginPath();
-                      ctx.roundRect(0, 0, size, size, size * 0.22);
-                      ctx.fill();
-                  } else {
-                      ctx.fillRect(0, 0, size, size);
-                  }
+                ctx.fillStyle = analysis.backgroundColor;
+                if (borderType === 'rounded') {
+                  ctx.beginPath();
+                  ctx.roundRect(0, 0, size, size, size * 0.22);
+                  ctx.fill();
+                } else {
+                  ctx.fillRect(0, 0, size, size);
+                }
               }
 
               const pad = (size * (analysis.paddingPercentage || 12)) / 100;
@@ -83,9 +179,9 @@ const IconGenerator: React.FC<IconGeneratorProps> = ({ onComplete }) => {
                 ctx.drawImage(img, pad, pad, drawSize, drawSize);
                 ctx.restore();
               }
-              
+
               ctx.drawImage(img, pad, pad, drawSize, drawSize);
-              
+
               generatedIcons.push({
                 size,
                 label: `${group.type}-${size}x${size}.png`,
@@ -99,20 +195,31 @@ const IconGenerator: React.FC<IconGeneratorProps> = ({ onComplete }) => {
 
           setProgress(100);
           onComplete({
-            id: Math.random().toString(36).substr(2, 9),
-            originalFileName: file.name,
+            id: generateSecureId(),
+            originalFileName: sanitizedFileName,
             icons: generatedIcons,
             htmlSnippet: `<!-- FaviconGen Generated Assets -->\n<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">\n<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">`,
-            manifestJson: JSON.stringify({ name: file.name.split('.')[0], theme_color: analysis.themeColor }, null, 2),
+            manifestJson: JSON.stringify({ name: sanitizedFileName.split('.')[0], theme_color: analysis.themeColor }, null, 2),
             timestamp: Date.now()
           });
-        } catch (error) {
-          setErrorMessage("Analysis protocol failed. Retrying with defaults.");
+
           setIsProcessing(false);
+          setUploadController(null);
+          showToast('Icons generated successfully!', 'success');
+
+        } catch (error) {
+          const friendlyMessage = getUserFriendlyMessage(error);
+          setErrorMessage(friendlyMessage);
+          showToast(friendlyMessage, 'error');
+          setIsProcessing(false);
+          setProgress(0);
+          setUploadController(null);
         }
       };
+
       img.src = result;
     };
+
     reader.readAsDataURL(file);
   };
 
@@ -174,15 +281,32 @@ const IconGenerator: React.FC<IconGeneratorProps> = ({ onComplete }) => {
                 </div>
             </div>
 
-            <button 
+            <button
               disabled={isProcessing}
               onClick={() => fileInputRef.current?.click()}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  fileInputRef.current?.click();
+                }
+              }}
+              aria-label={isProcessing ? 'Processing logo' : 'Upload logo file'}
+              aria-busy={isProcessing}
               className="group relative w-full py-8 sm:py-12 rounded-[30px] sm:rounded-[50px] text-[12px] sm:text-sm font-black uppercase tracking-[0.4em] sm:tracking-[0.5em] bg-slate-900 text-white overflow-hidden transition-all hover:scale-[1.02] active:scale-95 hover:shadow-[0_20px_60px_rgba(0,0,0,0.2)] disabled:opacity-50"
             >
               <span className="relative z-10">{isProcessing ? 'Distilling Brand...' : 'Load Brand Assets'}</span>
               <div className="absolute inset-0 bg-gradient-to-r from-violet-600 to-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity"></div>
             </button>
-            <input type="file" ref={fileInputRef} className="hidden" onChange={(e) => e.target.files && generateIcons(e.target.files[0])} accept="image/*" />
+            {isProcessing && (
+              <button
+                onClick={cancelUpload}
+                className="w-full py-4 rounded-2xl text-sm font-bold uppercase tracking-widest bg-white/60 text-slate-600 hover:bg-white transition-all border border-white/80"
+                aria-label="Cancel upload"
+              >
+                Cancel Upload
+              </button>
+            )}
+            <input type="file" ref={fileInputRef} className="hidden" onChange={(e) => e.target.files && generateIcons(e.target.files[0])} accept="image/*" aria-label="Logo file input" />
             
             {aiFeedback && (
               <div className="p-8 sm:p-10 bg-gradient-to-br from-violet-600/10 via-pink-600/10 to-indigo-600/10 border border-white rounded-[30px] sm:rounded-[50px] animate-fade-in space-y-6 sm:space-y-8 backdrop-blur-3xl shadow-2xl">

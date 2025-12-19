@@ -17,7 +17,7 @@ const Hero: React.FC<HeroProps> = ({ onStart }) => {
       <div className="max-w-[1400px] w-full mx-auto relative z-10 space-y-8 sm:space-y-14">
         <div className="inline-flex items-center gap-3 px-6 sm:px-8 py-2 sm:py-3 bg-white/50 backdrop-blur-2xl rounded-full border border-white/60 shadow-xl animate-fade-in mx-auto">
           <span className="flex h-2 w-2 sm:h-3 sm:w-3 rounded-full bg-violet-600 animate-ping"></span>
-          <span className="text-[10px] sm:text-[12px] font-black uppercase tracking-[0.4em] sm:tracking-[0.6em] text-violet-700">Studio Engine v4.0</span>
+          <span className="text-[10px] sm:text-[12px] font-black uppercase tracking-[0.4em] sm:tracking-[0.6em] text-violet-700">AI-Powered</span>
         </div>
 
         <h1 className="galaxy-mask text-5xl sm:text-9xl lg:text-[220px] leading-[1.1] sm:leading-[0.8] tracking-tighter mb-2 sm:mb-4 py-4 sm:py-8 drop-shadow-[0_15px_15px_rgba(0,0,0,0.1)]">
@@ -26,25 +26,35 @@ const Hero: React.FC<HeroProps> = ({ onStart }) => {
 
         <div className="space-y-6 sm:space-y-8 max-w-3xl mx-auto">
           <h2 className="text-3xl sm:text-6xl font-light tracking-tight text-slate-800 leading-tight">
-            Design <span className="font-extrabold text-gradient">Once.</span> <br className="hidden sm:block" />
-            Launch <span className="font-extrabold text-gradient">Everywhere.</span>
+            Turn Your Logo Into <br className="hidden sm:block" />
+            <span className="font-extrabold text-gradient">15+ App Icon Sizes</span>
           </h2>
-          
-          <p className="text-base sm:text-2xl font-medium text-slate-500/80 leading-relaxed px-4">
-            High-fidelity asset generation for iOS, Android, and Modern Web. Powered by <span className="text-violet-600 font-bold">Gemini AI</span> logic.
+
+          <p className="text-base sm:text-2xl font-medium text-slate-600 leading-relaxed px-4">
+            Upload one logo image and instantly get every icon size you need—from 16×16 favicons to 512×512 Android icons. AI automatically optimizes colors and padding for each platform: iPhone, Android, websites, and more.
           </p>
         </div>
 
         <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center pt-6 sm:pt-8 px-6 sm:px-0">
-          <button 
+          <button
             onClick={onStart}
             className="group relative px-10 sm:px-16 py-6 sm:py-8 rounded-2xl sm:rounded-3xl bg-slate-900 text-white font-black uppercase tracking-[0.4em] text-[11px] sm:text-[13px] transition-all hover:scale-105 active:scale-95 hover:shadow-[0_20px_60px_rgba(139,92,246,0.4)] overflow-hidden"
+            aria-label="Start creating your favicon and app icons"
           >
             <span className="relative z-10">Start Creation</span>
             <div className="absolute inset-0 bg-gradient-to-r from-violet-600 to-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity"></div>
           </button>
-          
-          <button className="px-8 sm:px-14 py-6 sm:py-8 rounded-2xl sm:rounded-3xl bg-white/60 backdrop-blur-xl border border-white/80 text-slate-900 font-black uppercase tracking-[0.4em] text-[11px] sm:text-[13px] hover:bg-white transition-all shadow-xl">
+
+          <button
+            onClick={() => {
+              const featuresSection = document.getElementById('features');
+              if (featuresSection) {
+                featuresSection.scrollIntoView({ behavior: 'smooth' });
+              }
+            }}
+            className="px-8 sm:px-14 py-6 sm:py-8 rounded-2xl sm:rounded-3xl bg-white/60 backdrop-blur-xl border border-white/80 text-slate-900 font-black uppercase tracking-[0.4em] text-[11px] sm:text-[13px] hover:bg-white transition-all shadow-xl"
+            aria-label="View feature showcase and examples"
+          >
             View Showcase
           </button>
         </div>

@@ -50,7 +50,7 @@ const Features: React.FC = () => {
   ];
 
   return (
-    <section className="py-20 sm:py-32 px-4 sm:px-12 max-w-[1400px] mx-auto space-y-20 sm:space-y-32">
+    <section id="features" className="py-20 sm:py-32 px-4 sm:px-12 max-w-[1400px] mx-auto space-y-20 sm:space-y-32">
       <div className="text-center space-y-6 sm:space-y-8">
         <span className="text-[11px] sm:text-[13px] font-black uppercase tracking-[0.4em] sm:tracking-[0.5em] text-violet-600">Infrastructure</span>
         <h2 className="text-4xl sm:text-6xl md:text-8xl font-black tracking-tighter text-slate-900 leading-tight">

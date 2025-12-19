@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { FaviconSet } from '../types';
+import { useToast } from './Toast';
 
 interface ResultViewProps {
   faviconSet: FaviconSet;
@@ -7,9 +8,65 @@ interface ResultViewProps {
 }
 
 const ResultView: React.FC<ResultViewProps> = ({ faviconSet, onBack }) => {
+  const { showToast } = useToast();
   const [filter, setFilter] = useState<'all' | 'favicon' | 'apple' | 'android'>('all');
+  const [isDownloading, setIsDownloading] = useState(false);
 
   const filteredIcons = faviconSet.icons.filter(icon => filter === 'all' || icon.type === filter);
+
+  const downloadSingleIcon = (icon: any) => {
+    try {
+      const a = document.createElement('a');
+      a.href = icon.dataUrl;
+      a.download = icon.label;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      showToast(`Downloaded ${icon.label}`, 'success');
+    } catch (error) {
+      console.error('Download error:', error);
+      showToast('Download failed. Please try again.', 'error');
+    }
+  };
+
+  const downloadAll = async () => {
+    setIsDownloading(true);
+    try {
+      // Dynamically import JSZip from CDN
+      const JSZip = (await import('https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm')).default;
+      const zip = new JSZip();
+
+      // Add all icons to zip
+      faviconSet.icons.forEach(icon => {
+        const base64Data = icon.dataUrl.split(',')[1];
+        zip.file(icon.label, base64Data, { base64: true });
+      });
+
+      // Add HTML snippet
+      zip.file('integration.html', faviconSet.htmlSnippet);
+
+      // Add manifest JSON
+      zip.file('manifest.json', faviconSet.manifestJson);
+
+      // Generate and download
+      const blob = await zip.generateAsync({ type: 'blob' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${faviconSet.originalFileName.split('.')[0]}-icons.zip`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      showToast('All icons downloaded as ZIP!', 'success');
+    } catch (error) {
+      console.error('Download error:', error);
+      showToast(`Download failed: ${error instanceof Error ? error.message : 'Please try again'}`, 'error');
+    } finally {
+      setIsDownloading(false);
+    }
+  };
 
   const getIconBg = (type: string) => {
     switch(type) {
@@ -34,8 +91,8 @@ const ResultView: React.FC<ResultViewProps> = ({ faviconSet, onBack }) => {
       <div className="max-w-[1400px] mx-auto">
         <header className="mb-24 flex flex-col xl:flex-row justify-between items-end gap-12">
           <div className="space-y-8">
-            <button 
-              onClick={onBack} 
+            <button
+              onClick={onBack}
               className="group flex items-center gap-4 text-[13px] font-black uppercase tracking-[0.5em] text-slate-400 hover:text-violet-600 transition-all"
             >
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5 group-hover:-translate-x-2 transition-transform">
@@ -43,11 +100,14 @@ const ResultView: React.FC<ResultViewProps> = ({ faviconSet, onBack }) => {
               </svg>
               Project Hub
             </button>
-            <h2 className="text-7xl md:text-9xl font-black text-slate-900 tracking-tighter uppercase leading-none">Output.</h2>
+            <h2 className="text-7xl md:text-9xl font-black text-slate-900 tracking-tighter uppercase leading-none">Your Logo.</h2>
+            <p className="text-2xl text-slate-600 font-medium max-w-2xl">
+              Your logo has been generated in <span className="font-bold text-violet-600">{faviconSet.icons.length} different sizes</span> for iOS, Android, web browsers, and more. Each size is optimized for specific devices and platforms.
+            </p>
             <div className="flex items-center gap-6 text-[12px] font-black uppercase tracking-[0.4em] text-violet-600">
                 <span className="px-6 py-2 bg-violet-100 rounded-full shadow-sm">BATCH: {faviconSet.id}</span>
                 <span className="w-2 h-2 bg-slate-200 rounded-full"></span>
-                <span className="text-slate-400">{faviconSet.icons.length} Variances</span>
+                <span className="text-slate-400">{faviconSet.icons.length} Sizes Generated</span>
             </div>
           </div>
           
@@ -68,11 +128,30 @@ const ResultView: React.FC<ResultViewProps> = ({ faviconSet, onBack }) => {
           {filteredIcons.map((icon, idx) => (
             <div key={idx} className="group glass-card p-10 rounded-[50px] flex flex-col items-center justify-center text-center hover:scale-105 transition-all duration-700 overflow-hidden relative">
               <div className={`absolute inset-0 bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity duration-700 ${getIconBg(icon.type)}`}></div>
+
+              {/* Download button for individual icon */}
+              <button
+                onClick={() => downloadSingleIcon(icon)}
+                className="absolute top-4 right-4 z-20 opacity-0 group-hover:opacity-100 transition-all duration-300 bg-white hover:bg-violet-600 text-slate-900 hover:text-white p-2 rounded-full shadow-lg"
+                aria-label={`Download ${icon.label}`}
+                title={`Download ${icon.label}`}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                </svg>
+              </button>
+
               <div className="relative mb-10 z-10">
-                <img src={icon.dataUrl} className="w-24 h-24 object-contain group-hover:scale-110 group-hover:rotate-12 transition-transform duration-700 drop-shadow-[0_20px_40px_rgba(0,0,0,0.15)]" alt="" />
-                <div className="absolute -top-6 -right-6 w-12 h-12 rounded-full bg-white text-slate-900 text-[11px] flex items-center justify-center font-black shadow-2xl border border-slate-50">{icon.size}</div>
+                <img src={icon.dataUrl} className="w-24 h-24 object-contain group-hover:scale-110 group-hover:rotate-12 transition-transform duration-700 drop-shadow-[0_20px_40px_rgba(0,0,0,0.15)]" alt={`${icon.type} icon ${icon.size}x${icon.size}px`} />
+                <div className="absolute -top-6 -right-6 w-16 h-16 rounded-full bg-white text-slate-900 text-[10px] flex items-center justify-center font-black shadow-2xl border border-slate-50 leading-tight">
+                  {icon.size}<br/>
+                  <span className="text-[8px] text-slate-500">px</span>
+                </div>
               </div>
-              <span className={`text-[12px] font-black uppercase tracking-[0.4em] transition-colors z-10 ${getAccentColor(icon.type)}`}>{icon.type}</span>
+              <span className={`text-[10px] font-black uppercase tracking-[0.2em] transition-colors z-10 ${getAccentColor(icon.type)} leading-relaxed`}>
+                {icon.type === 'apple' ? 'iOS' : icon.type === 'android' ? 'Android' : icon.type === 'favicon' ? 'Web' : 'MS'}<br/>
+                <span className="text-[8px] text-slate-400">{icon.size}×{icon.size}</span>
+              </span>
             </div>
           ))}
         </div>
@@ -106,8 +185,11 @@ const ResultView: React.FC<ResultViewProps> = ({ faviconSet, onBack }) => {
             <h3 className="text-4xl font-black text-slate-900 uppercase tracking-tighter">Integration</h3>
             <div className="bg-slate-900 text-violet-100 p-12 rounded-[50px] shadow-[0_40px_80px_rgba(0,0,0,0.3)] relative overflow-hidden group">
                 <div className="absolute top-8 right-10">
-                    <button 
-                      onClick={() => { navigator.clipboard.writeText(faviconSet.htmlSnippet); alert('Code Snippet Copied!'); }}
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(faviconSet.htmlSnippet);
+                        showToast('Code snippet copied to clipboard!', 'success');
+                      }}
                       className="px-6 py-2 bg-white/10 hover:bg-white/20 border border-white/20 rounded-full text-[11px] font-black uppercase tracking-widest text-white transition-all flex items-center gap-3"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
@@ -121,12 +203,29 @@ const ResultView: React.FC<ResultViewProps> = ({ faviconSet, onBack }) => {
                 </pre>
                 <div className="absolute bottom-6 right-10 text-white/5 text-6xl font-black select-none pointer-events-none">CODE</div>
             </div>
-            <button className="group relative w-full py-12 bg-gradient-to-r from-violet-600 via-indigo-600 to-violet-600 bg-[length:200%_auto] hover:bg-right transition-all duration-700 text-white rounded-[50px] text-sm font-black uppercase tracking-[0.5em] hover:scale-[1.02] shadow-[0_30px_70px_rgba(79,70,229,0.4)]">
+            <button
+              onClick={downloadAll}
+              disabled={isDownloading}
+              className="group relative w-full py-12 bg-gradient-to-r from-violet-600 via-indigo-600 to-violet-600 bg-[length:200%_auto] hover:bg-right transition-all duration-700 text-white rounded-[50px] text-sm font-black uppercase tracking-[0.5em] hover:scale-[1.02] shadow-[0_30px_70px_rgba(79,70,229,0.4)] disabled:opacity-50 disabled:cursor-not-allowed"
+              aria-label={isDownloading ? 'Downloading icons' : 'Download all icons as ZIP file'}
+            >
               <span className="relative z-10 flex items-center justify-center gap-4">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-6 h-6 animate-bounce">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
-                </svg>
-                Download Production Bundle
+                {isDownloading ? (
+                  <>
+                    <svg className="w-6 h-6 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Preparing Download...
+                  </>
+                ) : (
+                  <>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-6 h-6 animate-bounce">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                    </svg>
+                    Download Production Bundle
+                  </>
+                )}
               </span>
             </button>
           </div>

@@ -7,6 +7,10 @@
 import React, { useState, useRef } from 'react';
 import { extractContactFromImage, getEnrichment } from '../services/geminiService';
 import { Contact } from '../types';
+import { useToast } from './Toast';
+import { generateSecureId } from '../utils/idGenerator';
+import { sanitizeInput } from '../utils/sanitization';
+import { handleFileReaderError, getUserFriendlyMessage } from '../utils/errorHandling';
 
 interface ScannerProps {
   onCompleteSale: (contact: Contact) => void;
@@ -17,6 +21,7 @@ const POS: React.FC<ScannerProps> = ({ onCompleteSale, shopName }) => {
   const [mode, setMode] = useState<'scan' | 'manual'>('scan');
   const [image, setImage] = useState<string | null>(null);
   const [scanning, setScanning] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [formData, setFormData] = useState<Partial<Contact>>({
     company: 'PIERCE & PIERCE',
     address: '358 Exchange Place, New York, N.Y. 100099',
@@ -24,71 +29,143 @@ const POS: React.FC<ScannerProps> = ({ onCompleteSale, shopName }) => {
     telex: '10 4534'
   });
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { showToast } = useToast();
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64 = (reader.result as string).split(',')[1];
-        setImage(reader.result as string);
-        processImage(base64);
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    // Reset error state
+    setErrorMessage(null);
+
+    // Validate file size (10MB max)
+    const MAX_FILE_SIZE = 10 * 1024 * 1024;
+    if (file.size > MAX_FILE_SIZE) {
+      const errorMsg = 'Image is too large. Maximum size is 10MB.';
+      setErrorMessage(errorMsg);
+      showToast(errorMsg, 'error');
+      return;
     }
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      const errorMsg = 'Please upload an image file (PNG, JPG, etc.).';
+      setErrorMessage(errorMsg);
+      showToast(errorMsg, 'error');
+      return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onloadend = () => {
+      const base64 = (reader.result as string).split(',')[1];
+      setImage(reader.result as string);
+      processImage(base64);
+    };
+
+    reader.onerror = () => {
+      const error = handleFileReaderError(reader.error);
+      setErrorMessage(error.message);
+      showToast(error.message, 'error');
+      setScanning(false);
+    };
+
+    reader.readAsDataURL(file);
   };
 
   const processImage = async (base64: string) => {
     setScanning(true);
-    const data = await extractContactFromImage(base64);
-    if (data) {
-      const enrichment = await getEnrichment(data.name, data.company);
-      setFormData(prev => ({ ...prev, ...data, aiInsights: enrichment }));
+    setErrorMessage(null);
+
+    try {
+      const data = await extractContactFromImage(base64);
+
+      if (data) {
+        try {
+          const enrichment = await getEnrichment(data.name, data.company);
+          setFormData(prev => ({ ...prev, ...data, aiInsights: enrichment }));
+          showToast('Business card scanned successfully!', 'success');
+        } catch (enrichmentError) {
+          // Enrichment is optional, continue even if it fails
+          setFormData(prev => ({ ...prev, ...data }));
+          showToast('Card scanned! AI insights unavailable.', 'info');
+        }
+      } else {
+        const errorMsg = 'Could not extract information from the image. Please try again or use manual entry.';
+        setErrorMessage(errorMsg);
+        showToast(errorMsg, 'warning');
+      }
+    } catch (error) {
+      const errorMsg = getUserFriendlyMessage(error);
+      setErrorMessage(errorMsg);
+      showToast(errorMsg, 'error');
+      console.error('OCR Error:', error);
+    } finally {
+      setScanning(false);
     }
-    setScanning(false);
   };
 
   const handleSave = () => {
-    if (!formData.name) return;
-    const newContact: Contact = {
-      id: Math.random().toString(36).substr(2, 9),
-      name: formData.name || 'Unknown',
-      jobTitle: formData.jobTitle || 'Unknown',
-      company: formData.company || 'Unknown',
-      email: formData.email || '',
-      phone: formData.phone || '',
-      linkedinUrl: formData.linkedinUrl || '',
-      address: formData.address || '',
-      fax: formData.fax || '',
-      telex: formData.telex || '',
-      aiInsights: formData.aiInsights,
-      status: 'active',
-      timestamp: Date.now()
-    };
-    onCompleteSale(newContact);
-    setImage(null);
-    setFormData({
+    if (!formData.name) {
+      showToast('Please enter a name before saving.', 'warning');
+      return;
+    }
+
+    try {
+      // Sanitize all input fields
+      const newContact: Contact = {
+        id: generateSecureId(),
+        name: sanitizeInput(formData.name || 'Unknown', 100),
+        jobTitle: sanitizeInput(formData.jobTitle || 'Unknown', 100),
+        company: sanitizeInput(formData.company || 'Unknown', 200),
+        email: sanitizeInput(formData.email || '', 100),
+        phone: sanitizeInput(formData.phone || '', 50),
+        linkedinUrl: sanitizeInput(formData.linkedinUrl || '', 200),
+        address: sanitizeInput(formData.address || '', 300),
+        fax: sanitizeInput(formData.fax || '', 50),
+        telex: sanitizeInput(formData.telex || '', 50),
+        aiInsights: formData.aiInsights,
+        status: 'active',
+        timestamp: Date.now()
+      };
+
+      onCompleteSale(newContact);
+
+      // Reset form
+      setImage(null);
+      setErrorMessage(null);
+      setFormData({
         company: 'PIERCE & PIERCE',
         address: '358 Exchange Place, New York, N.Y. 100099',
         fax: '212 555 6390',
         telex: '10 4534'
-    });
-    alert("Identity Created Successfully!");
+      });
+
+      showToast('Contact saved successfully!', 'success');
+    } catch (error) {
+      const errorMsg = getUserFriendlyMessage(error);
+      setErrorMessage(errorMsg);
+      showToast(errorMsg, 'error');
+    }
   };
 
   return (
     <div className="pt-40 pb-24 px-4 md:px-8 max-w-[1200px] mx-auto animate-fade-in">
       <div className="flex justify-center mb-16">
-          <div className="bg-white border-4 border-black p-1 flex items-center shadow-2xl">
-              <button 
+          <div className="bg-white border-4 border-black p-1 flex items-center shadow-2xl" role="group" aria-label="Input mode selection">
+              <button
                 onClick={() => setMode('scan')}
                 className={`px-12 py-4 text-[11px] font-black uppercase tracking-[0.3em] transition-all ${mode === 'scan' ? 'bg-black text-white' : 'text-black hover:bg-black/5'}`}
+                aria-label="Scanner mode - scan business cards with camera"
+                aria-pressed={mode === 'scan'}
               >
                   Scanner
               </button>
-              <button 
+              <button
                 onClick={() => setMode('manual')}
                 className={`px-12 py-4 text-[11px] font-black uppercase tracking-[0.3em] transition-all ${mode === 'manual' ? 'bg-black text-white' : 'text-black hover:bg-black/5'}`}
+                aria-label="Manual mode - enter contact information manually"
+                aria-pressed={mode === 'manual'}
               >
                   Manual
               </button>
@@ -99,23 +176,46 @@ const POS: React.FC<ScannerProps> = ({ onCompleteSale, shopName }) => {
         
         <div className="space-y-12">
             {mode === 'scan' ? (
-                <div 
-                    className="clay-card p-16 bg-white border-4 border-black flex flex-col items-center justify-center min-h-[500px] text-center shadow-2xl relative group cursor-pointer"
-                    onClick={() => fileInputRef.current?.click()}
-                >
-                    {!image ? (
-                        <div>
-                            <div className="w-24 h-24 bg-black text-white flex items-center justify-center text-5xl mb-8 shadow-2xl group-hover:scale-110 transition-transform">📷</div>
-                            <h3 className="text-3xl font-black text-black uppercase tracking-tighter">Capture Card</h3>
-                            <p className="text-black/40 mt-4 font-black uppercase tracking-[0.4em] text-[10px]">GEMINI AI OCR ENGINE</p>
-                        </div>
-                    ) : (
-                        <div className="w-full relative">
-                            <img src={image} className="w-full grayscale border-4 border-black shadow-2xl" alt="Scan" />
+                <>
+                    <div
+                        className="clay-card p-16 bg-white border-4 border-black flex flex-col items-center justify-center min-h-[500px] text-center shadow-2xl relative group cursor-pointer"
+                        onClick={() => !scanning && fileInputRef.current?.click()}
+                        role="button"
+                        tabIndex={0}
+                        aria-label="Upload business card image for scanning"
+                        onKeyDown={(e) => {
+                          if ((e.key === 'Enter' || e.key === ' ') && !scanning) {
+                            e.preventDefault();
+                            fileInputRef.current?.click();
+                          }
+                        }}
+                    >
+                        {!image ? (
+                            <div>
+                                <div className="w-24 h-24 bg-black text-white flex items-center justify-center text-5xl mb-8 shadow-2xl group-hover:scale-110 transition-transform">📷</div>
+                                <h3 className="text-3xl font-black text-black uppercase tracking-tighter">Capture Card</h3>
+                                <p className="text-black/40 mt-4 font-black uppercase tracking-[0.4em] text-[10px]">GEMINI AI OCR ENGINE</p>
+                            </div>
+                        ) : (
+                            <div className="w-full relative">
+                                <img src={image} className="w-full grayscale border-4 border-black shadow-2xl" alt="Scanned business card" />
+                            </div>
+                        )}
+                        <input
+                          type="file"
+                          ref={fileInputRef}
+                          onChange={handleFileUpload}
+                          className="hidden"
+                          accept="image/*"
+                          aria-label="Business card image upload"
+                        />
+                    </div>
+                    {errorMessage && (
+                        <div className="bg-rose-100 border-4 border-rose-400 text-rose-800 px-6 py-4 text-sm font-bold text-center" role="alert">
+                            {errorMessage}
                         </div>
                     )}
-                    <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" accept="image/*" />
-                </div>
+                </>
             ) : (
                 <div className="clay-card p-12 bg-white shadow-2xl border-4 border-black space-y-8">
                     <h3 className="text-3xl font-black text-black uppercase tracking-tighter mb-8 border-b-4 border-black pb-4">Manual Entry</h3>
@@ -163,7 +263,7 @@ const POS: React.FC<ScannerProps> = ({ onCompleteSale, shopName }) => {
             )}
             
             {scanning && (
-                <div className="p-10 bg-black text-white text-center animate-pulse border-4 border-black">
+                <div className="p-10 bg-black text-white text-center animate-pulse border-4 border-black" role="status" aria-live="polite">
                     <span className="font-black uppercase tracking-[0.5em] text-sm">EXTRACTING...</span>
                 </div>
             )}
@@ -205,10 +305,11 @@ const POS: React.FC<ScannerProps> = ({ onCompleteSale, shopName }) => {
                 </div>
             </div>
 
-            <button 
+            <button
                 disabled={!formData.name}
                 onClick={handleSave}
                 className={`w-full py-10 text-2xl font-black uppercase tracking-[0.5em] shadow-2xl transition-all border-4 border-black active:scale-95 ${!formData.name ? 'bg-white text-black/10' : 'bg-black text-white hover:bg-white hover:text-black'}`}
+                aria-label={!formData.name ? 'Save button disabled - enter a name first' : 'Save contact to archive'}
             >
                 ARCHIVE
             </button>

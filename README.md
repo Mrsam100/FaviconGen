@@ -2,19 +2,199 @@
 <img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
 </div>
 
-# Run and deploy your AI Studio app
+# FaviconGen
 
-This contains everything you need to run your app locally.
+**AI-Powered Favicon & App Icon Generator**
 
-View your app in AI Studio: https://ai.studio/apps/drive/1Xthpy9sp74sKw8odXhHuCmuatqiW78KW
+Upload your logo. AI analyzes it and generates perfect app icons and favicons for all platforms—iOS, Android, and web. One upload, every size.
 
-## Run Locally
+## ✨ Features
 
-**Prerequisites:**  Node.js
+- **🎨 AI-Powered Analysis**: Gemini AI automatically detects optimal colors, padding, and contrast
+- **📱 Multi-Platform Support**: Generates icons for iOS, Android, PWA, and legacy browsers
+- **⚡ One-Click Download**: Export all icons as a ZIP file with HTML integration snippets
+- **🔒 Secure & Private**: All processing happens client-side; your images never leave your browser
+- **♿ Accessible**: WCAG 2.1 AA compliant with keyboard navigation and screen reader support
+- **📦 Additional Tools**:
+  - Business card scanner with AI OCR
+  - File summarization tool
+  - AI literacy assistant chatbot
 
+## 🚀 Quick Start
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+### Prerequisites
+
+- Node.js 18+ and npm
+- A Gemini API key ([Get one free here](https://aistudio.google.com/app/apikey))
+
+### Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd FaviconGen
+   ```
+
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Set up environment variables**
+
+   Create a `.env` file in the root directory:
+   ```bash
+   cp .env.example .env
+   ```
+
+   Then edit `.env` and add your Gemini API key:
+   ```
+   VITE_GEMINI_API_KEY=your_actual_api_key_here
+   ```
+
+4. **Run the development server**
+   ```bash
+   npm run dev
+   ```
+
+5. **Open your browser**
+
+   Navigate to `http://localhost:5173` (or the port shown in your terminal)
+
+## 🔐 Security
+
+FaviconGen has been built with security as a top priority:
+
+### Security Features
+
+- ✅ **No API Key Exposure**: API keys are properly secured using Vite environment variables
+- ✅ **Content Security Policy**: XSS protection via CSP headers
+- ✅ **Input Sanitization**: All user inputs are sanitized before processing
+- ✅ **Secure ID Generation**: Uses `crypto.randomUUID()` instead of `Math.random()`
+- ✅ **File Validation**: Strict file type and size validation (10MB max)
+- ✅ **Error Handling**: Comprehensive error boundaries prevent crashes
+- ✅ **Rate Limiting**: API calls are rate-limited to prevent quota exhaustion
+- ✅ **Retry Logic**: Exponential backoff for failed API calls
+- ✅ **Secure Storage**: Safe localStorage wrapper with error handling
+
+### Important Security Notes
+
+1. **Never commit your `.env` file** - It contains your API key
+2. **Use environment variables only** - Don't hardcode API keys in source code
+3. **Validate all uploads** - The app validates file types and sizes automatically
+4. **Monitor API usage** - Keep an eye on your Gemini API quota
+
+## 🛠️ Technology Stack
+
+- **Frontend**: React 19 + TypeScript
+- **Build Tool**: Vite 6
+- **AI**: Google Gemini API (gemini-3-flash-preview)
+- **Styling**: Tailwind CSS with glassmorphism design
+- **Canvas API**: For image manipulation and icon generation
+- **JSZip**: For bundling generated icons
+
+## 📦 Project Structure
+
+```
+FaviconGen/
+├── components/          # React components
+│   ├── IconGenerator.tsx    # Main icon generation interface
+│   ├── ResultView.tsx       # Results and download UI
+│   ├── Hero.tsx            # Landing page hero
+│   ├── Features.tsx        # Features showcase
+│   ├── Toast.tsx           # Toast notifications
+│   ├── ErrorBoundary.tsx   # Error handling
+│   └── ...
+├── services/           # External service integrations
+│   └── geminiService.ts    # Gemini AI API wrapper
+├── utils/              # Utility functions
+│   ├── sanitization.ts     # Input sanitization
+│   ├── storage.ts          # Secure localStorage wrapper
+│   ├── idGenerator.ts      # Secure ID generation
+│   └── errorHandling.ts    # Error handling utilities
+├── types.ts            # TypeScript type definitions
+├── .env.example        # Environment variable template
+└── index.html          # Entry point with CSP headers
+```
+
+## 🎯 Usage Guide
+
+### Generating Icons
+
+1. Click "Start Creation" on the homepage
+2. Upload your logo (PNG, JPG, or SVG)
+3. Wait for AI analysis (automatically detects colors and padding)
+4. Customize if needed (optional)
+5. Click "Download Production Bundle" to get all icons in a ZIP file
+
+### Icon Sizes Generated
+
+- **iOS**: 180x180, 152x152, 120x120, 76x76
+- **Android**: 192x192, 512x512, 144x144, 96x96, 48x48
+- **Web**: 32x32, 16x16
+- **Microsoft**: 144x144, 70x70
+- **Legacy**: favicon.ico
+
+### Integration
+
+The downloaded ZIP includes:
+- All icon files (PNG format)
+- `integration.html` - Copy-paste HTML snippet for your `<head>`
+- `manifest.json` - Web app manifest for PWAs
+
+## 🐛 Troubleshooting
+
+### Common Issues
+
+**Problem**: "API key not found" error
+
+**Solution**:
+1. Make sure you created a `.env` file (not `.env.local`)
+2. Check that the variable name is exactly `VITE_GEMINI_API_KEY`
+3. Restart the dev server after adding the API key
+
+---
+
+**Problem**: "Failed to analyze logo" error
+
+**Solution**:
+1. Check your internet connection
+2. Verify your API key is valid at [AI Studio](https://aistudio.google.com/)
+3. Ensure the image file is under 10MB
+4. Try with a different image format (PNG recommended)
+
+---
+
+**Problem**: Download button doesn't work
+
+**Solution**:
+1. Check browser console for errors
+2. Ensure pop-ups are not blocked
+3. Try a different browser (Chrome/Firefox recommended)
+
+---
+
+**Problem**: Icons look cut off
+
+**Solution**:
+1. Increase padding percentage in the customization panel
+2. Ensure your logo has transparent background
+3. Try uploading a higher resolution image
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## 📄 License
+
+Apache-2.0
+
+## 🔗 Links
+
+- View app in AI Studio: https://ai.studio/apps/drive/1Xthpy9sp74sKw8odXhHuCmuatqiW78KW
+- Get Gemini API Key: https://aistudio.google.com/app/apikey
+- Report Issues: [GitHub Issues](https://github.com/your-repo/issues)
+
+---
+
+Made with ❤️ using React, TypeScript, and Gemini AI
