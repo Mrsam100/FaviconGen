@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { FaviconSet } from '../types';
 import { useToast } from './Toast';
+import JSZip from 'jszip';
 
 interface ResultViewProps {
   faviconSet: FaviconSet;
@@ -32,8 +33,7 @@ const ResultView: React.FC<ResultViewProps> = ({ faviconSet, onBack }) => {
   const downloadAll = async () => {
     setIsDownloading(true);
     try {
-      // Dynamically import JSZip from CDN
-      const JSZip = (await import('https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm')).default;
+      // Create ZIP file with bundled JSZip library
       const zip = new JSZip();
 
       // Add all icons to zip
