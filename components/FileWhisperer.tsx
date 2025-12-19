@@ -186,8 +186,8 @@ const FileWhisperer: React.FC<FileWhispererProps> = ({ onComplete }) => {
         )}
 
         {/* Decorative elements */}
-        <div className="absolute top-8 left-8 text-[10px] font-black text-black/20 uppercase tracking-[0.3em]">SCHROEDER TECHNOLOGIES</div>
-        <div className="absolute bottom-8 right-8 text-[10px] font-black text-black/20 uppercase tracking-[0.3em]">GREGORIOUS STUDIOS</div>
+        <div className="absolute top-8 left-8 text-[10px] font-black text-black/20 uppercase tracking-[0.3em]">FAVICONGEN</div>
+        <div className="absolute bottom-8 right-8 text-[10px] font-black text-black/20 uppercase tracking-[0.3em]">AI POWERED</div>
       </div>
     </div>
   );

@@ -7,8 +7,8 @@
 import { JournalArticle } from './types';
 
 export const BRAND_NAME = 'FaviconGen';
-export const COMPANY_NAME = 'Schroeder Technologies';
-export const DESIGN_STUDIO = 'Gregorious Creative Studios';
+export const COMPANY_NAME = 'FaviconGen';
+export const DESIGN_STUDIO = 'FaviconGen Studio';
 
 export const FAVICON_SIZES = [16, 32, 48, 64, 128, 256];
 export const APPLE_SIZES = [120, 152, 167, 180];
@@ -35,16 +35,16 @@ export const JOURNAL_ARTICLES: JournalArticle[] = [
     id: '2',
     title: 'Minimalism and Clarity in UI',
     date: 'February 24, 2025',
-    excerpt: 'Exploring the Schroeder design philosophy of silence by default.',
-    content: 'Our philosophy focuses on materials that age with grace and devices that respect your attention. No blinking lights, no intrusive notifications.'
+    excerpt: 'Exploring the FaviconGen design philosophy of simplicity and precision.',
+    content: 'Our philosophy focuses on clean design and AI-powered optimization. Every icon is generated with pixel-perfect precision for each platform.'
   }
 ];
 
 // Added missing getPublisherInfo helper for card branding
 export const getPublisherInfo = (publisher: string) => {
   const brandMap: Record<string, { logo: string, color: string }> = {
+    'FaviconGen': { logo: 'F', color: '#8b5cf6' },
     'Oxford': { logo: 'O', color: '#1e3a8a' },
-    'Schroeder': { logo: 'S', color: '#b45309' },
     'Nexus': { logo: 'N', color: '#000000' }
   };
   return brandMap[publisher] || { logo: publisher.charAt(0).toUpperCase(), color: '#6366f1' };

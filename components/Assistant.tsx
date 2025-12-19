@@ -79,7 +79,7 @@ const Assistant: React.FC = () => {
           <div className="bg-[#EBE7DE] p-5 border-b border-[#D6D1C7] flex justify-between items-center">
             <div className="flex items-center gap-3">
                 <div className="w-2 h-2 bg-[#b45309] rounded-full animate-pulse" aria-hidden="true"></div>
-                <span className="font-serif italic text-[#2C2A26] text-lg">Schroeder Assistant</span>
+                <span className="font-serif italic text-[#2C2A26] text-lg">FaviconGen AI</span>
             </div>
             <button
               onClick={() => setIsOpen(false)}

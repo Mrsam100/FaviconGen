@@ -1,0 +1,31 @@
+# Dependencies
+node_modules
+
+# Development files
+.env
+.env.local
+.env.*.local
+
+# Editor directories
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Git
+.git
+.gitignore
+
+# Documentation (optional - remove if you want these in deployment)
+README.md
+DEPLOYMENT.md
+
+# Local development
+*.log
+npm-debug.log*
+pnpm-debug.log*
+lerna-debug.log*

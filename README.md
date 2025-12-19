@@ -8,6 +8,12 @@
 
 Upload your logo. AI analyzes it and generates perfect app icons and favicons for all platforms—iOS, Android, and web. One upload, every size.
 
+<div align="center">
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/YOUR_USERNAME/FaviconGen&env=VITE_GEMINI_API_KEY&envDescription=Gemini%20API%20key%20required%20for%20AI%20features&envLink=https://aistudio.google.com/app/apikey&project-name=favicongen&repository-name=favicongen)
+
+</div>
+
 ## ✨ Features
 
 - **🎨 AI-Powered Analysis**: Gemini AI automatically detects optimal colors, padding, and contrast
@@ -142,6 +148,75 @@ The downloaded ZIP includes:
 - `integration.html` - Copy-paste HTML snippet for your `<head>`
 - `manifest.json` - Web app manifest for PWAs
 
+## 🚀 Deploy to Vercel
+
+### One-Click Deployment
+
+The easiest way to deploy FaviconGen is using Vercel:
+
+1. **Push your code to GitHub** (or GitLab/Bitbucket)
+   ```bash
+   git init
+   git add .
+   git commit -m "Initial commit"
+   git remote add origin <your-repo-url>
+   git push -u origin main
+   ```
+
+2. **Deploy to Vercel**
+   - Go to [vercel.com](https://vercel.com)
+   - Click "New Project"
+   - Import your repository
+   - Vercel will auto-detect it's a Vite project
+
+3. **Add Environment Variables**
+   - In your Vercel project dashboard, go to **Settings** → **Environment Variables**
+   - Add: `VITE_GEMINI_API_KEY` with your Gemini API key
+   - Click "Save"
+
+4. **Deploy**
+   - Click "Deploy" and wait for the build to complete
+   - Your app will be live at `https://your-project.vercel.app`
+
+### Manual Deployment via CLI
+
+```bash
+# Install Vercel CLI
+npm i -g vercel
+
+# Login to Vercel
+vercel login
+
+# Deploy (first time - follow prompts)
+vercel
+
+# Add environment variable
+vercel env add VITE_GEMINI_API_KEY
+
+# Deploy to production
+vercel --prod
+```
+
+### Build Locally and Deploy
+
+```bash
+# Build the project
+npm run build
+
+# The dist/ folder is ready to deploy
+# Upload dist/ to any static hosting service
+```
+
+### Important Notes for Deployment
+
+- ✅ **Environment Variables**: Make sure to set `VITE_GEMINI_API_KEY` in your Vercel project settings
+- ✅ **Build Command**: `npm run build` (auto-detected by Vercel)
+- ✅ **Output Directory**: `dist` (auto-detected by Vercel)
+- ✅ **Framework**: Vite (auto-detected by Vercel)
+- ✅ **Node Version**: 18.x or higher (set in Vercel if needed)
+- ⚠️ **API Key Security**: Never commit your `.env` file to Git
+- ⚠️ **Quota Management**: Monitor your Gemini API usage on Google AI Studio
+
 ## 🐛 Troubleshooting
 
 ### Common Issues
@@ -191,9 +266,10 @@ Apache-2.0
 
 ## 🔗 Links
 
-- View app in AI Studio: https://ai.studio/apps/drive/1Xthpy9sp74sKw8odXhHuCmuatqiW78KW
-- Get Gemini API Key: https://aistudio.google.com/app/apikey
-- Report Issues: [GitHub Issues](https://github.com/your-repo/issues)
+- **[📋 Deployment Guide](./DEPLOYMENT.md)** - Complete step-by-step deployment checklist
+- **[🚀 Deploy to Vercel](https://vercel.com/new/clone?repository-url=https://github.com/YOUR_USERNAME/FaviconGen)** - One-click deployment
+- **[🔑 Get Gemini API Key](https://aistudio.google.com/app/apikey)** - Free API key for AI features
+- **[🐛 Report Issues](https://github.com/your-repo/issues)** - Bug reports and feature requests
 
 ---
 

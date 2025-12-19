@@ -58,10 +58,10 @@ const Footer: React.FC<FooterProps> = ({ onLinkClick }) => {
           <div className="flex flex-col md:flex-row justify-between items-center gap-10">
             <div className="space-y-2 text-center md:text-left">
               <p className="text-sm font-medium text-white/60">
-                © 2025 Schroeder Technologies. All rights reserved.
+                © 2025 FaviconGen. All rights reserved.
               </p>
               <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/30">
-                Design by Gregorious Creative Studios
+                AI-Powered Icon Generation
               </p>
             </div>
             
