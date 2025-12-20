@@ -28,6 +28,10 @@ const IconGenerator: React.FC<IconGeneratorProps> = ({ onComplete }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const cancelUpload = () => {
+    // Ask for confirmation before canceling
+    const confirmed = window.confirm('Are you sure you want to cancel? All progress will be lost.');
+    if (!confirmed) return;
+
     if (uploadController) {
       uploadController.abort();
       setUploadController(null);
@@ -136,7 +140,7 @@ const IconGenerator: React.FC<IconGeneratorProps> = ({ onComplete }) => {
 
           if (!ctx) {
             throw new AppError(
-              "Canvas not supported in your browser.",
+              "Your browser doesn't support image processing. Please try using Chrome, Firefox, or Safari.",
               "CANVAS_NOT_SUPPORTED",
               "critical"
             );

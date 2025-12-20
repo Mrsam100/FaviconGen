@@ -41,12 +41,25 @@ const ResultView: React.FC<ResultViewProps> = ({ faviconSet, onBack }) => {
       // Create ZIP file with bundled JSZip library
       const zip = new JSZip();
 
+      // Track edited files for README
+      const editedFilesList: string[] = [];
+
       // Add all icons to zip (use edited version if available)
       faviconSet.icons.forEach(icon => {
-        const dataUrl = editedIcons[icon.label]?.dataUrl || icon.dataUrl;
+        const editedIcon = editedIcons[icon.label];
+        const dataUrl = editedIcon?.dataUrl || icon.dataUrl;
         const base64Data = dataUrl.split(',')[1];
-        const filename = editedIcons[icon.label] ? icon.label.replace('.png', '-edited.png') : icon.label;
-        zip.file(filename, base64Data, { base64: true });
+
+        // Better naming: keep original names, add folder for edited versions
+        if (editedIcon) {
+          zip.file(`edited/${icon.label}`, base64Data, { base64: true });
+          editedFilesList.push(icon.label);
+          // Also include original for comparison
+          const originalBase64 = icon.dataUrl.split(',')[1];
+          zip.file(`original/${icon.label}`, originalBase64, { base64: true });
+        } else {
+          zip.file(icon.label, base64Data, { base64: true });
+        }
       });
 
       // Add HTML snippet
@@ -54,6 +67,40 @@ const ResultView: React.FC<ResultViewProps> = ({ faviconSet, onBack }) => {
 
       // Add manifest JSON
       zip.file('manifest.json', faviconSet.manifestJson);
+
+      // Add README with info about edited files
+      if (editedFilesList.length > 0) {
+        const readme = `# FaviconGen Icons Package
+
+## Edited Icons
+The following icons have been customized using the FaviconGen editor:
+
+${editedFilesList.map(file => `- ${file}`).join('\n')}
+
+### Folder Structure
+- \`/\` - Non-edited icons (ready to use)
+- \`/edited/\` - Your customized versions
+- \`/original/\` - Original versions of edited icons (for comparison)
+
+Use the files in \`/edited/\` folder for the icons you customized.
+All other icons can be used directly from the root folder.
+
+Generated with FaviconGen - https://favicongen.com
+`;
+        zip.file('README.md', readme);
+      } else {
+        const readme = `# FaviconGen Icons Package
+
+All icons are ready to use!
+
+## Integration
+See \`integration.html\` for code to add to your website's <head> section.
+See \`manifest.json\` for the PWA manifest file.
+
+Generated with FaviconGen - https://favicongen.com
+`;
+        zip.file('README.md', readme);
+      }
 
       // Generate and download
       const blob = await zip.generateAsync({ type: 'blob' });
@@ -66,7 +113,10 @@ const ResultView: React.FC<ResultViewProps> = ({ faviconSet, onBack }) => {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
-      showToast('All icons downloaded as ZIP!', 'success');
+      const message = editedFilesList.length > 0
+        ? `Downloaded ${faviconSet.icons.length} icons (${editedFilesList.length} edited)`
+        : 'All icons downloaded as ZIP!';
+      showToast(message, 'success');
     } catch (error) {
       console.error('Download error:', error);
       showToast(`Download failed: ${error instanceof Error ? error.message : 'Please try again'}`, 'error');

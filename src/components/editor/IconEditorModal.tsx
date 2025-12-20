@@ -24,17 +24,77 @@ const IconEditorModal: React.FC<IconEditorModalProps> = ({ icon, onClose, onSave
 
   const [canvasDataUrl, setCanvasDataUrl] = useState<string>('');
 
-  // Handle Escape key to close modal
+  // Handle keyboard shortcuts
   useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
+    const handleKeyboard = (e: KeyboardEvent) => {
+      // Escape to close
       if (e.key === 'Escape') {
         onClose();
+        return;
+      }
+
+      // Ctrl+S or Cmd+S to save/export
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        handleExport();
+        return;
+      }
+
+      // Ctrl+R or Cmd+R to reset (override browser refresh)
+      if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
+        e.preventDefault();
+        handleReset();
+        return;
       }
     };
 
-    document.addEventListener('keydown', handleEscape);
-    return () => document.removeEventListener('keydown', handleEscape);
-  }, [onClose]);
+    document.addEventListener('keydown', handleKeyboard);
+    return () => document.removeEventListener('keydown', handleKeyboard);
+  }, [onClose, canvasDataUrl, editorState]);
+
+  // Focus trap and initial focus
+  useEffect(() => {
+    // Save previously focused element
+    const previouslyFocused = document.activeElement as HTMLElement;
+
+    // Focus the modal
+    const modalElement = document.querySelector('[role="dialog"]') as HTMLElement;
+    if (modalElement) {
+      modalElement.focus();
+    }
+
+    // Focus trap
+    const handleTab = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab') return;
+
+      const focusableElements = modalElement?.querySelectorAll(
+        'button, input, [tabindex]:not([tabindex="-1"])'
+      );
+
+      if (!focusableElements || focusableElements.length === 0) return;
+
+      const firstElement = focusableElements[0] as HTMLElement;
+      const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
+
+      if (e.shiftKey && document.activeElement === firstElement) {
+        e.preventDefault();
+        lastElement.focus();
+      } else if (!e.shiftKey && document.activeElement === lastElement) {
+        e.preventDefault();
+        firstElement.focus();
+      }
+    };
+
+    document.addEventListener('keydown', handleTab);
+
+    // Cleanup: restore focus
+    return () => {
+      document.removeEventListener('keydown', handleTab);
+      if (previouslyFocused) {
+        previouslyFocused.focus();
+      }
+    };
+  }, []);
 
   const handleReset = () => {
     setEditorState({
@@ -92,12 +152,15 @@ const IconEditorModal: React.FC<IconEditorModalProps> = ({ icon, onClose, onSave
             <p className="text-sm text-slate-500 mt-1 font-medium">
               {icon.size}×{icon.size}px • {icon.type.toUpperCase()} • {icon.label}
             </p>
+            <p className="text-xs text-slate-400 mt-2 font-mono">
+              <span className="opacity-70">Shortcuts:</span> Esc <span className="opacity-50">close</span> • Ctrl+S <span className="opacity-50">save</span> • Ctrl+R <span className="opacity-50">reset</span>
+            </p>
           </div>
 
           <button
             onClick={onClose}
             className="text-slate-400 hover:text-slate-900 transition-colors p-2 rounded-full hover:bg-white/50"
-            aria-label="Close editor"
+            aria-label="Close editor (press Escape)"
           >
             <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

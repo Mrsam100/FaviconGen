@@ -81,8 +81,13 @@ const AppContent: React.FC = () => {
                 <span className="text-[12px] font-black uppercase tracking-[0.5em] text-violet-500 block mb-4">Historical Data</span>
                 <h1 className="text-7xl md:text-9xl font-extrabold text-slate-900 tracking-tighter uppercase mb-4">Vault.</h1>
                 <p className="text-slate-400 font-bold uppercase tracking-widest text-xs italic">A historical compilation of generated assets</p>
+                {archives.length > 0 && (
+                  <p className="mt-6 text-sm text-slate-500 font-medium">
+                    Showing {archives.length} of last 15 generations • Older items are automatically archived
+                  </p>
+                )}
             </header>
-            
+
             {archives.length === 0 ? (
               <div className="py-40 glass-card flex flex-col items-center justify-center rounded-[40px] border-dashed border-4">
                  <p className="opacity-20 font-black uppercase tracking-[0.5em] text-sm">No Assets Saved</p>
