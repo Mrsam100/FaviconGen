@@ -1,11 +1,11 @@
 import React, { useState, useRef } from 'react';
-import { analyzeLogoForIcons } from '../services/geminiService';
-import { FaviconSet, IconResult } from '../types';
-import { FAVICON_SIZES, APPLE_SIZES, ANDROID_SIZES, MS_SIZES } from '../constants';
-import { useToast } from './Toast';
-import { sanitizeFileName, isValidImageFile, isValidImageDimensions } from '../utils/sanitization';
-import { generateSecureId } from '../utils/idGenerator';
-import { handleFileReaderError, handleImageLoadError, getUserFriendlyMessage, AppError } from '../utils/errorHandling';
+import { analyzeLogoForIcons } from '../../services/geminiService';
+import { FaviconSet, IconResult } from '../../types';
+import { FAVICON_SIZES, APPLE_SIZES, ANDROID_SIZES, MS_SIZES } from '../../constants';
+import { useToast } from '../shared/Toast';
+import { sanitizeFileName, isValidImageFile, isValidImageDimensions } from '../../utils/sanitization';
+import { generateSecureId } from '../../utils/idGenerator';
+import { handleFileReaderError, handleImageLoadError, getUserFriendlyMessage, AppError } from '../../utils/errorHandling';
 
 interface IconGeneratorProps {
   onComplete: (faviconSet: FaviconSet) => void;

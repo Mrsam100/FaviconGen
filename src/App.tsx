@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import Navbar from './components/Navbar';
-import Hero from './components/Hero';
-import IconGenerator from './components/IconGenerator';
-import ResultView from './components/ResultView';
-import Footer from './components/Footer';
-import Features from './components/Features';
-import InteractiveBackground from './components/InteractiveBackground';
-import { ToastProvider } from './components/Toast';
-import { ErrorBoundary } from './components/ErrorBoundary';
+import Navbar from './components/core/Navbar';
+import Hero from './components/core/Hero';
+import IconGenerator from './components/generator/IconGenerator';
+import ResultView from './components/generator/ResultView';
+import Footer from './components/core/Footer';
+import Features from './components/core/Features';
+import InteractiveBackground from './components/core/InteractiveBackground';
+import { ToastProvider } from './components/shared/Toast';
+import { ErrorBoundary } from './components/shared/ErrorBoundary';
 import { AppView, FaviconSet } from './types';
 import { SecureStorage } from './utils/storage';
 

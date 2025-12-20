@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { FaviconSet } from '../types';
-import { useToast } from './Toast';
+import { FaviconSet, IconResult, EditorState } from '../../types';
+import { useToast } from '../shared/Toast';
 import JSZip from 'jszip';
+import IconEditorModal from '../editor/IconEditorModal';
 
 interface ResultViewProps {
   faviconSet: FaviconSet;
@@ -12,6 +13,10 @@ const ResultView: React.FC<ResultViewProps> = ({ faviconSet, onBack }) => {
   const { showToast } = useToast();
   const [filter, setFilter] = useState<'all' | 'favicon' | 'apple' | 'android'>('all');
   const [isDownloading, setIsDownloading] = useState(false);
+
+  // Editor state
+  const [editingIcon, setEditingIcon] = useState<IconResult | null>(null);
+  const [editedIcons, setEditedIcons] = useState<Record<string, {dataUrl: string, state: EditorState}>>({});
 
   const filteredIcons = faviconSet.icons.filter(icon => filter === 'all' || icon.type === filter);
 
@@ -36,10 +41,12 @@ const ResultView: React.FC<ResultViewProps> = ({ faviconSet, onBack }) => {
       // Create ZIP file with bundled JSZip library
       const zip = new JSZip();
 
-      // Add all icons to zip
+      // Add all icons to zip (use edited version if available)
       faviconSet.icons.forEach(icon => {
-        const base64Data = icon.dataUrl.split(',')[1];
-        zip.file(icon.label, base64Data, { base64: true });
+        const dataUrl = editedIcons[icon.label]?.dataUrl || icon.dataUrl;
+        const base64Data = dataUrl.split(',')[1];
+        const filename = editedIcons[icon.label] ? icon.label.replace('.png', '-edited.png') : icon.label;
+        zip.file(filename, base64Data, { base64: true });
       });
 
       // Add HTML snippet
@@ -65,6 +72,23 @@ const ResultView: React.FC<ResultViewProps> = ({ faviconSet, onBack }) => {
       showToast(`Download failed: ${error instanceof Error ? error.message : 'Please try again'}`, 'error');
     } finally {
       setIsDownloading(false);
+    }
+  };
+
+  // Open editor for a specific icon
+  const handleEditIcon = (icon: IconResult, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent triggering download
+    setEditingIcon(icon);
+  };
+
+  // Save edited icon
+  const handleSaveEdit = (editedDataUrl: string, editorState: EditorState) => {
+    if (editingIcon) {
+      setEditedIcons(prev => ({
+        ...prev,
+        [editingIcon.label]: { dataUrl: editedDataUrl, state: editorState }
+      }));
+      setEditingIcon(null);
     }
   };
 
@@ -125,35 +149,70 @@ const ResultView: React.FC<ResultViewProps> = ({ faviconSet, onBack }) => {
         </header>
 
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-8 mb-32">
-          {filteredIcons.map((icon, idx) => (
-            <div key={idx} className="group glass-card p-10 rounded-[50px] flex flex-col items-center justify-center text-center hover:scale-105 transition-all duration-700 overflow-hidden relative">
-              <div className={`absolute inset-0 bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity duration-700 ${getIconBg(icon.type)}`}></div>
+          {filteredIcons.map((icon, idx) => {
+            const editedIcon = editedIcons[icon.label];
+            const displayDataUrl = editedIcon?.dataUrl || icon.dataUrl;
 
-              {/* Download button for individual icon */}
-              <button
-                onClick={() => downloadSingleIcon(icon)}
-                className="absolute top-4 right-4 z-20 opacity-0 group-hover:opacity-100 transition-all duration-300 bg-white hover:bg-violet-600 text-slate-900 hover:text-white p-2 rounded-full shadow-lg"
-                aria-label={`Download ${icon.label}`}
-                title={`Download ${icon.label}`}
+            return (
+              <div
+                key={idx}
+                onClick={(e) => handleEditIcon(icon, e)}
+                className="group glass-card p-10 rounded-[50px] flex flex-col items-center justify-center text-center hover:scale-105 transition-all duration-700 overflow-hidden relative cursor-pointer"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
-                </svg>
-              </button>
+                <div className={`absolute inset-0 bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity duration-700 ${getIconBg(icon.type)}`}></div>
 
-              <div className="relative mb-10 z-10">
-                <img src={icon.dataUrl} className="w-24 h-24 object-contain group-hover:scale-110 group-hover:rotate-12 transition-transform duration-700 drop-shadow-[0_20px_40px_rgba(0,0,0,0.15)]" alt={`${icon.type} icon ${icon.size}x${icon.size}px`} />
-                <div className="absolute -top-6 -right-6 w-16 h-16 rounded-full bg-white text-slate-900 text-[10px] flex items-center justify-center font-black shadow-2xl border border-slate-50 leading-tight">
-                  {icon.size}<br/>
-                  <span className="text-[8px] text-slate-500">px</span>
+                {/* Edit button (appears on hover) */}
+                <button
+                  onClick={(e) => handleEditIcon(icon, e)}
+                  className="absolute top-4 left-4 z-20 opacity-0 group-hover:opacity-100 transition-all duration-300 bg-violet-600 hover:bg-violet-700 text-white p-2 rounded-full shadow-lg"
+                  aria-label={`Edit ${icon.label}`}
+                  title="Click to edit this icon"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" />
+                  </svg>
+                </button>
+
+                {/* Download button for individual icon */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    downloadSingleIcon({ ...icon, dataUrl: displayDataUrl });
+                  }}
+                  className="absolute top-4 right-4 z-20 opacity-0 group-hover:opacity-100 transition-all duration-300 bg-white hover:bg-violet-600 text-slate-900 hover:text-white p-2 rounded-full shadow-lg"
+                  aria-label={`Download ${icon.label}`}
+                  title={`Download ${icon.label}`}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                  </svg>
+                </button>
+
+                {/* Edited indicator */}
+                {editedIcon && (
+                  <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 bg-green-500 text-white text-[8px] font-black px-2 py-1 rounded-full uppercase tracking-wider">
+                    Edited
+                  </div>
+                )}
+
+                <div className="relative mb-10 z-10">
+                  <img
+                    src={displayDataUrl}
+                    className="w-24 h-24 object-contain group-hover:scale-110 group-hover:rotate-12 transition-transform duration-700 drop-shadow-[0_20px_40px_rgba(0,0,0,0.15)]"
+                    alt={`${icon.type} icon ${icon.size}x${icon.size}px`}
+                  />
+                  <div className="absolute -top-6 -right-6 w-16 h-16 rounded-full bg-white text-slate-900 text-[10px] flex items-center justify-center font-black shadow-2xl border border-slate-50 leading-tight">
+                    {icon.size}<br/>
+                    <span className="text-[8px] text-slate-500">px</span>
+                  </div>
                 </div>
+                <span className={`text-[10px] font-black uppercase tracking-[0.2em] transition-colors z-10 ${getAccentColor(icon.type)} leading-relaxed`}>
+                  {icon.type === 'apple' ? 'iOS' : icon.type === 'android' ? 'Android' : icon.type === 'favicon' ? 'Web' : 'MS'}<br/>
+                  <span className="text-[8px] text-slate-400">{icon.size}×{icon.size}</span>
+                </span>
               </div>
-              <span className={`text-[10px] font-black uppercase tracking-[0.2em] transition-colors z-10 ${getAccentColor(icon.type)} leading-relaxed`}>
-                {icon.type === 'apple' ? 'iOS' : icon.type === 'android' ? 'Android' : icon.type === 'favicon' ? 'Web' : 'MS'}<br/>
-                <span className="text-[8px] text-slate-400">{icon.size}×{icon.size}</span>
-              </span>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-20">
@@ -231,6 +290,15 @@ const ResultView: React.FC<ResultViewProps> = ({ faviconSet, onBack }) => {
           </div>
         </div>
       </div>
+
+      {/* Icon Editor Modal */}
+      {editingIcon && (
+        <IconEditorModal
+          icon={editingIcon}
+          onClose={() => setEditingIcon(null)}
+          onSave={handleSaveEdit}
+        />
+      )}
     </div>
   );
 };

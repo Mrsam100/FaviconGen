@@ -9,7 +9,42 @@ export interface IconResult {
   label: string;
   dataUrl: string;
   type: 'favicon' | 'apple' | 'android' | 'ms';
+  editedDataUrl?: string;     // Stores edited version if user customized
+  editorState?: EditorState;  // Stores last edit settings
 }
+
+// Editor state for per-icon customization
+export interface EditorState {
+  // Transform properties
+  scale: number;           // 0.1 to 2.0 (10% to 200%)
+  padding: number;         // 0 to 50 (pixels)
+  rotation: number;        // 0 to 360 (degrees)
+  positionX: number;       // -100 to 100 (offset in pixels)
+  positionY: number;       // -100 to 100 (offset in pixels)
+
+  // Visual properties
+  backgroundColor: string; // Hex color or 'transparent'
+  borderRadius: number;    // 0 to 50 (percentage)
+
+  // Color (only for SVG)
+  logoColor?: string;      // Hex color for SVG fill
+
+  // Metadata
+  originalDataUrl: string; // Original icon data URL
+  iconSize: number;        // e.g., 180
+  iconType: 'favicon' | 'apple' | 'android' | 'ms';
+}
+
+// Default editor state
+export const DEFAULT_EDITOR_STATE: Partial<EditorState> = {
+  scale: 1.0,
+  padding: 0,
+  rotation: 0,
+  positionX: 0,
+  positionY: 0,
+  backgroundColor: 'transparent',
+  borderRadius: 0,
+};
 
 export interface FaviconSet {
   id: string;

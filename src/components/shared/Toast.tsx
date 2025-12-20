@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
-import { generateSecureId } from '../utils/idGenerator';
+import { generateSecureId } from '../../utils/idGenerator';
 
 type ToastType = 'success' | 'error' | 'warning' | 'info';
 
