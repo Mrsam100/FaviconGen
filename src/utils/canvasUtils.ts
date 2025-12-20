@@ -53,15 +53,28 @@ export async function renderIconToCanvas(
 
   // Apply scale and padding
   const padding = state.padding;
-  const scaledSize = (size - padding * 2) * state.scale;
+  const availableSize = (size - padding * 2) * state.scale;
+
+  // Calculate dimensions to maintain aspect ratio
+  const imgAspect = img.width / img.height;
+  let drawWidth = availableSize;
+  let drawHeight = availableSize;
+
+  if (imgAspect > 1) {
+    // Image is wider than tall
+    drawHeight = availableSize / imgAspect;
+  } else if (imgAspect < 1) {
+    // Image is taller than wide
+    drawWidth = availableSize * imgAspect;
+  }
 
   // Draw logo centered
   ctx.drawImage(
     img,
-    -scaledSize / 2,
-    -scaledSize / 2,
-    scaledSize,
-    scaledSize
+    -drawWidth / 2,
+    -drawHeight / 2,
+    drawWidth,
+    drawHeight
   );
 
   ctx.restore();

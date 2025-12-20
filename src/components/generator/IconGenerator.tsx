@@ -170,17 +170,34 @@ const IconGenerator: React.FC<IconGeneratorProps> = ({ onComplete }) => {
               }
 
               const pad = (size * (analysis.paddingPercentage || 12)) / 100;
-              const drawSize = size - (pad * 2);
+              const availableSize = size - (pad * 2);
+
+              // Calculate dimensions to maintain aspect ratio
+              const imgAspect = img.width / img.height;
+              let drawWidth = availableSize;
+              let drawHeight = availableSize;
+
+              if (imgAspect > 1) {
+                // Image is wider than tall
+                drawHeight = availableSize / imgAspect;
+              } else if (imgAspect < 1) {
+                // Image is taller than wide
+                drawWidth = availableSize * imgAspect;
+              }
+
+              // Center the image
+              const x = pad + (availableSize - drawWidth) / 2;
+              const y = pad + (availableSize - drawHeight) / 2;
 
               if (useOutline) {
                 ctx.save();
                 ctx.shadowColor = outlineColor;
                 ctx.shadowBlur = outlineThickness * (size / 100);
-                ctx.drawImage(img, pad, pad, drawSize, drawSize);
+                ctx.drawImage(img, x, y, drawWidth, drawHeight);
                 ctx.restore();
               }
 
-              ctx.drawImage(img, pad, pad, drawSize, drawSize);
+              ctx.drawImage(img, x, y, drawWidth, drawHeight);
 
               generatedIcons.push({
                 size,
