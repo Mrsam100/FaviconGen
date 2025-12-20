@@ -15,11 +15,6 @@ const Hero: React.FC<HeroProps> = ({ onStart }) => {
       </div>
 
       <div className="max-w-[1400px] w-full mx-auto relative z-10 space-y-8 sm:space-y-14">
-        <div className="inline-flex items-center gap-3 px-6 sm:px-8 py-2 sm:py-3 bg-white/50 backdrop-blur-2xl rounded-full border border-white/60 shadow-xl animate-fade-in mx-auto">
-          <span className="flex h-2 w-2 sm:h-3 sm:w-3 rounded-full bg-violet-600 animate-ping"></span>
-          <span className="text-[10px] sm:text-[12px] font-black uppercase tracking-[0.4em] sm:tracking-[0.6em] text-violet-700">AI-Powered</span>
-        </div>
-
         <h1 className="galaxy-mask text-5xl sm:text-9xl lg:text-[220px] leading-[1.1] sm:leading-[0.8] tracking-tighter mb-2 sm:mb-4 py-4 sm:py-8 drop-shadow-[0_15px_15px_rgba(0,0,0,0.1)]">
           FaviconGen
         </h1>
